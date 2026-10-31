@@ -8,40 +8,55 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-type GroupId = 'orders' | 'returns' | 'transfer' | 'database'
+type GroupId = 'create-order' | 'to-order' | 'orders' | 'returns' | 'transfer' | 'database'
 type NavigationGroup = {
   id: GroupId
   label: string
   icon: LucideIcon
-  shortcut: string
+  shortcut?: string
   items: string[]
 }
 
+const orderTabs = ['Reno Urgent', 'Reno Kvant', 'Isuzu', 'VO manuell', 'VO VOR', 'Kodat', 'Däck']
+
 const navigationGroups: NavigationGroup[] = [
+  {
+    id: 'create-order',
+    label: 'Skapa beställning',
+    icon: ShoppingBasket,
+    shortcut: 'a',
+    items: ['Reno', 'Isuzu', 'Volvo', 'Kodat', 'VOC', 'Däck'],
+  },
+  {
+    id: 'to-order',
+    label: 'Att beställa',
+    icon: ShoppingBasket,
+    items: orderTabs,
+  },
   {
     id: 'orders',
     label: 'Beställningar',
     icon: ShoppingBasket,
     shortcut: 'b',
-    items: ['Reno Urgent', 'Reno Kvant', 'Isuzu', 'VO manuell', 'VO VOR', 'Kodat', 'Däck'],
+    items: orderTabs,
   },
   {
     id: 'returns',
-    label: 'Returer',
+    label: 'Retur & Reklamation',
     icon: RotateCcw,
     shortcut: 'u',
     items: ['Reno', 'VO', 'Isuzu', 'Diverse'],
   },
   {
     id: 'transfer',
-    label: 'Import/Export',
+    label: 'Dataflöden',
     icon: ArrowLeftRight,
     shortcut: 'i',
-    items: ['Import', 'Export'],
+    items: ['Importera', 'Exportera', 'Konvertera'],
   },
   {
     id: 'database',
-    label: 'Databas',
+    label: 'Register',
     icon: Database,
     shortcut: 'k',
     items: ['FakturaRE', 'PacklistaRE', 'Orderdatabas', 'Artikeldata', 'Arbetsorder'],
@@ -89,13 +104,13 @@ function Sidebar({
             key={id}
             type="button"
             aria-current={activeGroup === id ? 'page' : undefined}
-            aria-keyshortcuts={`Alt+${shortcut.toUpperCase()}`}
-            title={`Alt+${shortcut.toUpperCase()}`}
+            aria-keyshortcuts={shortcut ? `Alt+${shortcut.toUpperCase()}` : undefined}
+            title={shortcut ? `Alt+${shortcut.toUpperCase()}` : undefined}
             onClick={() => onSelectGroup({ id, label, icon: Icon, shortcut, ...group })}
           >
             <Icon className="nav-group-icon" size={18} strokeWidth={1.8} />
             <span>{label}</span>
-            <kbd className="shortcut-hint">Alt+{shortcut.toUpperCase()}</kbd>
+            {shortcut && <kbd className="shortcut-hint">Alt+{shortcut.toUpperCase()}</kbd>}
           </button>
         ))}
       </nav>
