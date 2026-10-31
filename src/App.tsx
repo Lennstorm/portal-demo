@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowLeftRight,
+  ChevronDown,
   Database,
   RotateCcw,
   ShoppingBasket,
@@ -12,6 +13,7 @@ type NavigationGroup = {
   id: GroupId
   label: string
   icon: LucideIcon
+  shortcut: string
   items: string[]
 }
 
@@ -20,25 +22,29 @@ const navigationGroups: NavigationGroup[] = [
     id: 'orders',
     label: 'Beställningar',
     icon: ShoppingBasket,
+    shortcut: 'b',
     items: ['Reno Urgent', 'Reno Kvant', 'Isuzu', 'VO manuell', 'VO VOR', 'Kodat', 'Däck'],
   },
   {
     id: 'returns',
     label: 'Returer',
     icon: RotateCcw,
+    shortcut: 'u',
     items: ['Reno', 'VO', 'Isuzu', 'Diverse'],
   },
   {
     id: 'transfer',
     label: 'Import/Export',
     icon: ArrowLeftRight,
+    shortcut: 'i',
     items: ['Import', 'Export'],
   },
   {
     id: 'database',
     label: 'Databas',
     icon: Database,
-    items: ['FakturaRE', 'PacklistaRE', 'Orderdatabas', 'Lagerplatser'],
+    shortcut: 'k',
+    items: ['FakturaRE', 'PacklistaRE', 'Orderdatabas', 'Artikeldata', 'Arbetsorder'],
   },
 ]
 
@@ -53,28 +59,43 @@ function Sidebar({
     <aside className="portal-sidebar">
       <div className="sidebar-brand">
         <div className="brand-mark" aria-hidden="true">
-          NV
+          <img className="brand-image" src="/Hel_favicon_invert.ico" alt="" />
         </div>
         <div className="brand-copy">
-          <span className="brand-eyebrow">Nordväst</span>
-          <span className="brand-name">Inköpsportal</span>
+          <span className="brand-eyebrow">Anders Andersson</span>
+          <label className="brand-location">
+            <select
+              className="brand-name"
+              aria-label="Ort för beställningar"
+              defaultValue="Karlstad"
+            >
+              <option value="Sunne">Sunne</option>
+              <option value="Arvika">Arvika</option>
+              <option value="Karlstad">Karlstad</option>
+              <option value="Torsby">Torsby</option>
+              <option value="Filipstad">Filipstad</option>
+              <option value="Karlskoga">Karlskoga</option>
+            </select>
+            <ChevronDown size={13} aria-hidden="true" />
+          </label>
         </div>
       </div>
 
       <div className="sidebar-section-label">Huvudmeny</div>
       <nav className="sidebar-nav" aria-label="Huvudnavigation">
-        {navigationGroups.map(({ id, label, icon: Icon, ...group }, index) => (
+        {navigationGroups.map(({ id, label, icon: Icon, shortcut, ...group }) => (
           <button
             className={`nav-group-button${activeGroup === id ? ' is-current' : ''}`}
             key={id}
             type="button"
             aria-current={activeGroup === id ? 'page' : undefined}
-            aria-keyshortcuts={`Alt+${index + 1}`}
-            title={`Alt+${index + 1}`}
-            onClick={() => onSelectGroup({ id, label, icon: Icon, ...group })}
+            aria-keyshortcuts={`Alt+${shortcut.toUpperCase()}`}
+            title={`Alt+${shortcut.toUpperCase()}`}
+            onClick={() => onSelectGroup({ id, label, icon: Icon, shortcut, ...group })}
           >
             <Icon className="nav-group-icon" size={18} strokeWidth={1.8} />
             <span>{label}</span>
+            <kbd className="shortcut-hint">Alt+{shortcut.toUpperCase()}</kbd>
           </button>
         ))}
       </nav>
@@ -94,7 +115,7 @@ function App() {
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
-      if (!event.altKey || event.ctrlKey || event.metaKey) return
+      if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
 
       const target = event.target
       if (
@@ -104,25 +125,22 @@ function App() {
         return
       }
 
-      const digit = event.code.match(/^(?:Digit|Numpad)([1-9])$/)?.[1]
-      if (!digit) return
-
-      const index = Number(digit) - 1
-      if (event.shiftKey) {
-        const item = activeGroup.items[index]
-        if (!item) return
-
+      const key = event.key.toLowerCase()
+      const group = navigationGroups.find(({ shortcut }) => shortcut === key)
+      if (group) {
         event.preventDefault()
-        setActiveItem(item)
+        setActiveGroup(group)
+        setActiveItem(group.items[0])
         return
       }
 
-      const group = navigationGroups[index]
-      if (!group) return
+      const digit = event.code.match(/^(?:Digit|Numpad)([1-9])$/)?.[1]
+      if (!digit) return
+      const item = activeGroup.items[Number(digit) - 1]
+      if (!item) return
 
       event.preventDefault()
-      setActiveGroup(group)
-      setActiveItem(group.items[0])
+      setActiveItem(item)
     }
 
     window.addEventListener('keydown', handleShortcut)
@@ -150,8 +168,8 @@ function App() {
                 role="tab"
                 id={`tab-${activeGroup.id}-${index}`}
                 aria-selected={isActive}
-                aria-keyshortcuts={`Alt+Shift+${index + 1}`}
-                title={`Alt+Shift+${index + 1}`}
+                aria-keyshortcuts={`Alt+${index + 1}`}
+                title={`Alt+${index + 1}`}
                 onClick={() => setActiveItem(item)}
               >
                 {item}
