@@ -323,9 +323,7 @@ function App() {
   const [packingListRows, setPackingListRows] = useState<PackingListRow[]>(
     () => createEmptyPackingListRows(15),
   )
-  const [backorderRows, setBackorderRows] = useState<BackorderRow[]>(
-    () => createEmptyBackorderRows(15),
-  )
+  const [backorderRows] = useState<BackorderRow[]>(() => createEmptyBackorderRows(15))
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileMessage, setFileMessage] = useState('')
   const [fileError, setFileError] = useState('')
@@ -338,7 +336,7 @@ function App() {
     if (!pendingInputFocus.current) return
     cellInputRefs.current.get(pendingInputFocus.current)?.focus()
     pendingInputFocus.current = null
-  }, [orderRows, invoiceRows, packingListRows, backorderRows])
+  }, [orderRows, invoiceRows, packingListRows])
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -437,19 +435,6 @@ function App() {
 
   function removePackingListRow(rowIndex: number) {
     setPackingListRows((rows) => rows.filter((_, index) => index !== rowIndex))
-  }
-
-  function updateBackorderCell(rowIndex: number, column: BackorderColumn, value: string) {
-    setBackorderRows((rows) =>
-      rows.map((row, index) => (index === rowIndex ? { ...row, [column]: value } : row)),
-    )
-  }
-
-  function addBackorderRow(focusAfterAdding = false) {
-    if (focusAfterAdding) {
-      pendingInputFocus.current = `database:Backorderlista RE:${backorderRows.length}:Account no`
-    }
-    setBackorderRows((rows) => [...rows, createEmptyBackorderRow()])
   }
 
   function selectFile(file: File | undefined) {
@@ -850,7 +835,6 @@ function App() {
                       {backorderColumns.map((column) => (
                         <th key={column} scope="col">{column}</th>
                       ))}
-                      <th className="order-table-action-heading" aria-label="Åtgärder" />
                     </tr>
                   </thead>
                   <tbody>
@@ -860,45 +844,12 @@ function App() {
                           <td key={column}>
                             <input
                               aria-label={`${column}, rad ${rowIndex + 1}`}
-                              ref={(element) => {
-                                const refKey = `database:Backorderlista RE:${rowIndex}:${column}`
-                                if (element) cellInputRefs.current.set(refKey, element)
-                                else cellInputRefs.current.delete(refKey)
-                              }}
                               value={row[column]}
+                              readOnly
                               className={row[column] ? 'has-content' : undefined}
-                              onChange={(event) =>
-                                updateBackorderCell(rowIndex, column, event.target.value)
-                              }
-                              onKeyDown={(event) => {
-                                if (
-                                  event.key === 'Tab' &&
-                                  !event.shiftKey &&
-                                  rowIndex === backorderRows.length - 1 &&
-                                  column === backorderColumns[backorderColumns.length - 1]
-                                ) {
-                                  event.preventDefault()
-                                  addBackorderRow(true)
-                                }
-                              }}
                             />
                           </td>
                         ))}
-                        <td className="order-table-action-cell">
-                          <div className="order-row-actions">
-                            {rowIndex === backorderRows.length - 1 && (
-                              <button
-                                className="add-row-cell"
-                                type="button"
-                                aria-label="Lägg till rad"
-                                title="Lägg till rad"
-                                onClick={() => addBackorderRow()}
-                              >
-                                <Plus size={17} aria-hidden="true" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
