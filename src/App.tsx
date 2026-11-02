@@ -25,9 +25,9 @@ const orderTabs = ['Reno Urgent', 'Reno Kvant', 'Isuzu', 'VO manuell', 'VO VOR',
 const orderColumns = [
   'Prefix',
   'Artikelnummer',
+  'Benämning',
   'Antal',
-  'Butiksorder',
-  'Arbetsorder',
+  'AO/BO',
   'Behovsdatum',
   'Skapad av',
   'Rest',
@@ -87,6 +87,19 @@ const backorderColumns = [
 
 type OrderColumn = (typeof orderColumns)[number]
 type OrderRow = Record<OrderColumn, string>
+const orderColumnWidths: Record<OrderColumn, `${number}%`> = {
+  Prefix: '4%',
+  Artikelnummer: '8%',
+  Benämning: '19%',
+  Antal: '4%',
+  'AO/BO': '7%',
+  Behovsdatum: '9%',
+  'Skapad av': '15%',
+  Rest: '8%',
+  Notering: '12%',
+  LP: '5%',
+  'Reg.nr.': '5%',
+}
 type InvoiceColumn = (typeof invoiceColumns)[number]
 type InvoiceRow = Record<InvoiceColumn, string>
 type PackingListColumn = (typeof packingListColumns)[number]
@@ -502,17 +515,75 @@ function App() {
         </nav>
         {activeGroup.id === 'create-order' && (
           <section className="order-entry" role="tabpanel" aria-labelledby={`tab-create-order-${activeGroup.items.indexOf(activeItem)}`}>
-            <header className="order-entry-header">
+            <header className="order-entry-header has-upload-panel">
               <div>
                 <p className="order-entry-eyebrow">Skapa beställning</p>
                 <h1>{activeItem}</h1>
               </div>
+              <aside
+                className={`file-upload-panel${isDragging ? ' is-dragging' : ''}`}
+                onDragOver={(event) => {
+                  event.preventDefault()
+                  setIsDragging(true)
+                }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    setIsDragging(false)
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  setIsDragging(false)
+                  selectFile(event.dataTransfer.files[0])
+                }}
+              >
+                <div className="upload-icon"><FileUp size={21} aria-hidden="true" /></div>
+                <div className="upload-copy">
+                  <h2>Importera från fil</h2>
+                  <p className="upload-instructions">Dra en fil hit för att välja den</p>
+                  <p className="upload-file-types">CSV, TSV eller TXT</p>
+                  {selectedFile && <p className="selected-file">{selectedFile.name}</p>}
+                  {fileError && <p className="file-feedback is-error" role="alert">{fileError}</p>}
+                  {fileMessage && <p className="file-feedback" role="status">{fileMessage}</p>}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  className="visually-hidden"
+                  type="file"
+                  accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+                  aria-label="Välj fil att importera"
+                  onChange={(event) => selectFile(event.target.files?.[0])}
+                />
+                <div className="upload-actions">
+                  <button
+                    className="upload-button"
+                    type="button"
+                    disabled={!selectedFile}
+                    onClick={() => void uploadFile()}
+                  >
+                    Ladda upp
+                  </button>
+                  <button
+                    className="choose-file-button"
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Välj fil
+                  </button>
+                </div>
+              </aside>
             </header>
 
             <div className="order-entry-content">
               <div className="order-table-section">
                 <div className="order-table-scroll">
-                  <table className="order-table">
+                  <table className="order-table order-entry-table">
+                    <colgroup>
+                      {orderColumns.map((column) => (
+                        <col key={column} style={{ width: orderColumnWidths[column] }} />
+                      ))}
+                      <col style={{ width: '4%' }} />
+                    </colgroup>
                     <thead>
                       <tr>
                         {orderColumns.map((column) => <th key={column} scope="col">{column}</th>)}
@@ -581,56 +652,6 @@ function App() {
                 </div>
               </div>
 
-              <aside
-                className={`file-upload-panel${isDragging ? ' is-dragging' : ''}`}
-                onDragOver={(event) => {
-                  event.preventDefault()
-                  setIsDragging(true)
-                }}
-                onDragLeave={(event) => {
-                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                    setIsDragging(false)
-                  }
-                }}
-                onDrop={(event) => {
-                  event.preventDefault()
-                  setIsDragging(false)
-                  selectFile(event.dataTransfer.files[0])
-                }}
-              >
-                <div className="upload-icon"><FileUp size={21} aria-hidden="true" /></div>
-                <h2>Importera från fil</h2>
-                <p className="upload-instructions">Dra en fil hit för att välja den</p>
-                <p className="upload-file-types">CSV, TSV eller TXT</p>
-                <input
-                  ref={fileInputRef}
-                  className="visually-hidden"
-                  type="file"
-                  accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
-                  aria-label="Välj fil att importera"
-                  onChange={(event) => selectFile(event.target.files?.[0])}
-                />
-                {selectedFile && <p className="selected-file">{selectedFile.name}</p>}
-                <div className="upload-actions">
-                  <button
-                    className="upload-button"
-                    type="button"
-                    disabled={!selectedFile}
-                    onClick={() => void uploadFile()}
-                  >
-                    Ladda upp
-                  </button>
-                  <button
-                    className="choose-file-button"
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Välj fil
-                  </button>
-                </div>
-                {fileError && <p className="file-feedback is-error" role="alert">{fileError}</p>}
-                {fileMessage && <p className="file-feedback" role="status">{fileMessage}</p>}
-              </aside>
             </div>
           </section>
         )}
