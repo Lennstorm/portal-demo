@@ -85,7 +85,7 @@
   appearance: none;
   background: transparent;
   color: var(--color-white);
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Noto Sans', 'Segoe UI', sans-serif;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -284,7 +284,7 @@
 .order-entry-header h1 {
   margin: 0;
   color: var(--color-navy);
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Noto Sans', 'Segoe UI', sans-serif;
   font-size: 25px;
   font-weight: 700;
   letter-spacing: -0.035em;
@@ -361,6 +361,25 @@
   table-layout: fixed;
 }
 
+.supplier-order-table {
+  max-width: 100%;
+}
+
+.supplier-order-table-scroll {
+  overflow-x: hidden;
+}
+
+.supplier-order-table th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-order-table .order-table-action-heading,
+.supplier-order-table td.order-table-action-cell {
+  width: 10%;
+}
+
 .order-table th {
   position: sticky;
   z-index: 1;
@@ -432,6 +451,7 @@
 }
 
 .order-entry-table input {
+  box-sizing: border-box;
   min-width: 0;
 }
 

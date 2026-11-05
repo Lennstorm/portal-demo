@@ -21,6 +21,20 @@ type NavigationGroup = {
 }
 
 const createOrderTabs = ['Reno', 'Isuzu', 'Volvo', 'Kodat', 'VOC', 'Däck']
+const supplierOrderTabs = ['Osram', 'Olja', 'Diverse'] as const
+const createOrderItems = [...createOrderTabs, ...supplierOrderTabs]
+const supplierOrderColumns = [
+  'Prefix',
+  'Artikelnummer',
+  'Benämning',
+  'Saldo',
+  'Reserverat',
+  'LP1',
+  'Prognos',
+  'Spärrkod',
+  'Servicekvant',
+  'Behov',
+] as const
 const orderTabs = ['Reno Urgent', 'Reno Kvant', 'Isuzu', 'VO manuell', 'VO VOR', 'Kodat', 'Däck']
 const orderColumns = [
   'Prefix',
@@ -87,6 +101,8 @@ const backorderColumns = [
 
 type OrderColumn = (typeof orderColumns)[number]
 type OrderRow = Record<OrderColumn, string>
+type SupplierOrderColumn = (typeof supplierOrderColumns)[number]
+type SupplierOrderRow = Record<SupplierOrderColumn, string>
 const orderColumnWidths: Record<OrderColumn, `${number}%`> = {
   Prefix: '4%',
   Artikelnummer: '8%',
@@ -99,6 +115,18 @@ const orderColumnWidths: Record<OrderColumn, `${number}%`> = {
   Notering: '12%',
   LP: '5%',
   'Reg.nr.': '5%',
+}
+const supplierOrderColumnWidths: Record<SupplierOrderColumn, `${number}%`> = {
+  Prefix: '5%',
+  Artikelnummer: '12%',
+  Benämning: '22%',
+  Saldo: '5%',
+  Reserverat: '5%',
+  LP1: '4%',
+  Prognos: '5%',
+  Spärrkod: '5%',
+  Servicekvant: '5%',
+  Behov: '5%',
 }
 type InvoiceColumn = (typeof invoiceColumns)[number]
 type InvoiceRow = Record<InvoiceColumn, string>
@@ -113,6 +141,14 @@ function createEmptyRow(): OrderRow {
 
 function createEmptyRows(count: number): OrderRow[] {
   return Array.from({ length: count }, createEmptyRow)
+}
+
+function createEmptySupplierOrderRow(): SupplierOrderRow {
+  return Object.fromEntries(supplierOrderColumns.map((column) => [column, ''])) as SupplierOrderRow
+}
+
+function createEmptySupplierOrderRows(count: number): SupplierOrderRow[] {
+  return Array.from({ length: count }, createEmptySupplierOrderRow)
 }
 
 function createEmptyInvoiceRow(): InvoiceRow {
@@ -227,7 +263,7 @@ const navigationGroups: NavigationGroup[] = [
     label: 'Skapa beställning',
     icon: ShoppingBasket,
     shortcut: 'a',
-    items: createOrderTabs,
+    items: createOrderItems,
   },
   {
     id: 'to-order',
@@ -332,6 +368,9 @@ function App() {
   const [orderRows, setOrderRows] = useState<Record<string, OrderRow[]>>(
     () => Object.fromEntries(createOrderTabs.map((tab) => [tab, createEmptyRows(15)])),
   )
+  const [supplierOrderRows, setSupplierOrderRows] = useState<Record<string, SupplierOrderRow[]>>(
+    () => Object.fromEntries(supplierOrderTabs.map((tab) => [tab, createEmptySupplierOrderRows(15)])),
+  )
   const [invoiceRows, setInvoiceRows] = useState<InvoiceRow[]>(() => createEmptyInvoiceRows(15))
   const [packingListRows, setPackingListRows] = useState<PackingListRow[]>(
     () => createEmptyPackingListRows(15),
@@ -349,7 +388,7 @@ function App() {
     if (!pendingInputFocus.current) return
     cellInputRefs.current.get(pendingInputFocus.current)?.focus()
     pendingInputFocus.current = null
-  }, [orderRows, invoiceRows, packingListRows])
+  }, [orderRows, supplierOrderRows, invoiceRows, packingListRows])
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -411,6 +450,36 @@ function App() {
 
   function removeOrderRow(rowIndex: number) {
     setOrderRows((currentRows) => ({
+      ...currentRows,
+      [activeItem]: currentRows[activeItem].filter((_, index) => index !== rowIndex),
+    }))
+  }
+
+  function updateSupplierOrderCell(
+    rowIndex: number,
+    column: SupplierOrderColumn,
+    value: string,
+  ) {
+    setSupplierOrderRows((currentRows) => ({
+      ...currentRows,
+      [activeItem]: currentRows[activeItem].map((row, index) =>
+        index === rowIndex ? { ...row, [column]: value } : row,
+      ),
+    }))
+  }
+
+  function addSupplierOrderRow(focusAfterAdding = false) {
+    if (focusAfterAdding) {
+      pendingInputFocus.current = `${activeItem}:${supplierRows.length}:Prefix`
+    }
+    setSupplierOrderRows((currentRows) => ({
+      ...currentRows,
+      [activeItem]: [...currentRows[activeItem], createEmptySupplierOrderRow()],
+    }))
+  }
+
+  function removeSupplierOrderRow(rowIndex: number) {
+    setSupplierOrderRows((currentRows) => ({
       ...currentRows,
       [activeItem]: currentRows[activeItem].filter((_, index) => index !== rowIndex),
     }))
@@ -487,6 +556,7 @@ function App() {
   }
 
   const currentRows = orderRows[activeItem] ?? createEmptyRows(15)
+  const supplierRows = supplierOrderRows[activeItem]
 
   return (
     <div className="portal-layout">
@@ -520,63 +590,147 @@ function App() {
                 <p className="order-entry-eyebrow">Skapa beställning</p>
                 <h1>{activeItem}</h1>
               </div>
-              <aside
-                className={`file-upload-panel${isDragging ? ' is-dragging' : ''}`}
-                onDragOver={(event) => {
-                  event.preventDefault()
-                  setIsDragging(true)
-                }}
-                onDragLeave={(event) => {
-                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              {supplierRows ? (
+                <button className="upload-button create-order-button" type="button">
+                  Skapa beställning
+                </button>
+              ) : (
+                <aside
+                  className={`file-upload-panel${isDragging ? ' is-dragging' : ''}`}
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    setIsDragging(true)
+                  }}
+                  onDragLeave={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                      setIsDragging(false)
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault()
                     setIsDragging(false)
-                  }
-                }}
-                onDrop={(event) => {
-                  event.preventDefault()
-                  setIsDragging(false)
-                  selectFile(event.dataTransfer.files[0])
-                }}
-              >
-                <div className="upload-icon"><FileUp size={21} aria-hidden="true" /></div>
-                <div className="upload-copy">
-                  <h2>Importera från fil</h2>
-                  <p className="upload-instructions">Dra en fil hit för att välja den</p>
-                  <p className="upload-file-types">CSV, TSV eller TXT</p>
-                  {selectedFile && <p className="selected-file">{selectedFile.name}</p>}
-                  {fileError && <p className="file-feedback is-error" role="alert">{fileError}</p>}
-                  {fileMessage && <p className="file-feedback" role="status">{fileMessage}</p>}
-                </div>
-                <input
-                  ref={fileInputRef}
-                  className="visually-hidden"
-                  type="file"
-                  accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
-                  aria-label="Välj fil att importera"
-                  onChange={(event) => selectFile(event.target.files?.[0])}
-                />
-                <div className="upload-actions">
-                  <button
-                    className="upload-button"
-                    type="button"
-                    disabled={!selectedFile}
-                    onClick={() => void uploadFile()}
-                  >
-                    Ladda upp
-                  </button>
-                  <button
-                    className="choose-file-button"
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Välj fil
-                  </button>
-                </div>
-              </aside>
+                    selectFile(event.dataTransfer.files[0])
+                  }}
+                >
+                  <div className="upload-icon"><FileUp size={21} aria-hidden="true" /></div>
+                  <div className="upload-copy">
+                    <h2>Importera från fil</h2>
+                    <p className="upload-instructions">Dra en fil hit för att välja den</p>
+                    <p className="upload-file-types">CSV, TSV eller TXT</p>
+                    {selectedFile && <p className="selected-file">{selectedFile.name}</p>}
+                    {fileError && <p className="file-feedback is-error" role="alert">{fileError}</p>}
+                    {fileMessage && <p className="file-feedback" role="status">{fileMessage}</p>}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    className="visually-hidden"
+                    type="file"
+                    accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+                    aria-label="Välj fil att importera"
+                    onChange={(event) => selectFile(event.target.files?.[0])}
+                  />
+                  <div className="upload-actions">
+                    <button
+                      className="upload-button"
+                      type="button"
+                      disabled={!selectedFile}
+                      onClick={() => void uploadFile()}
+                    >
+                      Ladda upp
+                    </button>
+                    <button
+                      className="choose-file-button"
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Välj fil
+                    </button>
+                  </div>
+                </aside>
+              )}
             </header>
 
             <div className="order-entry-content">
               <div className="order-table-section">
-                <div className="order-table-scroll">
+                <div
+                  className={`order-table-scroll${supplierRows ? ' supplier-order-table-scroll' : ''}`}
+                >
+                  {supplierRows ? (
+                    <table className="order-table order-entry-table supplier-order-table">
+                      <colgroup>
+                        {supplierOrderColumns.map((column) => (
+                          <col key={column} style={{ width: supplierOrderColumnWidths[column] }} />
+                        ))}
+                        <col style={{ width: '10%' }} />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          {supplierOrderColumns.map((column) => (
+                            <th key={column} scope="col">{column}</th>
+                          ))}
+                          <th className="order-table-action-heading" aria-label="Lägg till rad" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {supplierRows.map((row, rowIndex) => (
+                          <tr key={rowIndex}>
+                            {supplierOrderColumns.map((column) => (
+                              <td key={column}>
+                                <input
+                                  aria-label={`${column}, rad ${rowIndex + 1}`}
+                                  ref={(element) => {
+                                    const refKey = `${activeItem}:${rowIndex}:${column}`
+                                    if (element) cellInputRefs.current.set(refKey, element)
+                                    else cellInputRefs.current.delete(refKey)
+                                  }}
+                                  value={row[column]}
+                                  className={row[column] ? 'has-content' : undefined}
+                                  onChange={(event) =>
+                                    updateSupplierOrderCell(rowIndex, column, event.target.value)
+                                  }
+                                  onKeyDown={(event) => {
+                                    if (
+                                      event.key === 'Tab' &&
+                                      !event.shiftKey &&
+                                      rowIndex === supplierRows.length - 1 &&
+                                      column === supplierOrderColumns[supplierOrderColumns.length - 1]
+                                    ) {
+                                      event.preventDefault()
+                                      addSupplierOrderRow(true)
+                                    }
+                                  }}
+                                />
+                              </td>
+                            ))}
+                            <td className="order-table-action-cell">
+                              <div className="order-row-actions">
+                                <button
+                                  className="remove-row-cell"
+                                  type="button"
+                                  aria-label={`Ta bort rad ${rowIndex + 1}`}
+                                  title={`Ta bort rad ${rowIndex + 1}`}
+                                  onClick={() => removeSupplierOrderRow(rowIndex)}
+                                >
+                                  <Trash2 size={16} aria-hidden="true" />
+                                </button>
+                                {rowIndex === supplierRows.length - 1 && (
+                                  <button
+                                    className="add-row-cell"
+                                    type="button"
+                                    aria-label="Lägg till rad"
+                                    title="Lägg till rad"
+                                    onClick={() => addSupplierOrderRow()}
+                                  >
+                                    <Plus size={17} aria-hidden="true" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
                   <table className="order-table order-entry-table">
                     <colgroup>
                       {orderColumns.map((column) => (
@@ -649,6 +803,7 @@ function App() {
                       ))}
                     </tbody>
                   </table>
+                  )}
                 </div>
               </div>
 
