@@ -4,9 +4,11 @@ This template provides a minimal setup to get React working in Vite with HMR and
 
 ## Deploying to GitHub Pages
 
-The repository-root workflow at `../.github/workflows/deploy.yml` builds this app from `portal-demo` and publishes `portal-demo/dist` when changes are pushed to `main`. In the repository settings, set **Pages → Build and deployment → Source** to **GitHub Actions**.
+The workflow at `.github/workflows/deploy.yml` builds the app and publishes `dist` on every push to `main`. Before the first deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. The workflow checks that Pages is configured before uploading the build.
 
-Vite uses the repository name from GitHub Actions to set the base path for project pages. For a `*.github.io` site, it uses the root path instead.
+Vite uses the repository name from GitHub Actions to set the project-site base path. Public assets referenced by the app should use `import.meta.env.BASE_URL` so they work under that path.
+
+This repository is private. GitHub Pages must be available for private repositories on the account's plan; see the [GitHub Pages documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages).
 
 Currently, two official plugins are available:
 

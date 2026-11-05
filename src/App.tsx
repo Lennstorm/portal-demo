@@ -312,7 +312,11 @@ function Sidebar({
     <aside className="portal-sidebar">
       <div className="sidebar-brand">
         <div className="brand-mark" aria-hidden="true">
-          <img className="brand-image" src="/Hel_favicon_invert.ico" alt="" />
+          <img
+            className="brand-image"
+            src={`${import.meta.env.BASE_URL}Hel_favicon_invert.ico`}
+            alt=""
+          />
         </div>
         <div className="brand-copy">
           <span className="brand-eyebrow">Anders Andersson</span>
