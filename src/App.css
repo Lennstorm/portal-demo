@@ -273,6 +273,13 @@
   gap: 20px;
 }
 
+.supplier-order-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .order-entry-header.has-action {
   display: flex;
   align-items: flex-end;
@@ -453,6 +460,10 @@
   white-space: normal;
 }
 
+.order-entry-table tbody tr:nth-child(even) td {
+  background-color: #f8faff;
+}
+
 .order-entry-table .order-table-action-heading,
 .order-entry-table td.order-table-action-cell {
   width: 4%;
@@ -462,6 +473,10 @@
 
 .order-table tbody tr:hover {
   background: #f8faff;
+}
+
+.order-entry-table tbody tr:hover td {
+  background-color: #f8faff;
 }
 
 .order-table input {

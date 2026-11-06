@@ -29,6 +29,9 @@ type NavigationGroup = {
 const createOrderTabs = ["Reno", "Isuzu", "Volvo", "Kodat", "VOC", "Däck"];
 const supplierOrderTabs = ["Osram", "Olja", "Diverse"] as const;
 const createOrderItems = [...createOrderTabs, ...supplierOrderTabs];
+const ORDER_ENTRY_ROWS_HEIGHT_BREAKPOINT = 900;
+const DEFAULT_ORDER_ENTRY_ROW_COUNT = 15;
+const COMPACT_ORDER_ENTRY_ROW_COUNT = 10;
 const supplierOrderColumns = [
   "Prefix",
   "Artikelnummer",
@@ -199,6 +202,12 @@ function createEmptyBackorderRows(count: number): BackorderRow[] {
   return Array.from({ length: count }, createEmptyBackorderRow);
 }
 
+function getInitialOrderEntryRowCount(): number {
+  return window.innerHeight < ORDER_ENTRY_ROWS_HEIGHT_BREAKPOINT
+    ? COMPACT_ORDER_ENTRY_ROW_COUNT
+    : DEFAULT_ORDER_ENTRY_ROW_COUNT;
+}
+
 function parseDelimitedText(text: string): string[][] {
   const firstRecord = text.split(/\r?\n/, 1)[0] ?? "";
   const delimiters = [";", "\t", ","];
@@ -289,13 +298,14 @@ const navigationGroups: NavigationGroup[] = [
     id: "create-order",
     label: "Skapa beställning",
     icon: ShoppingBasket,
-    shortcut: "a",
+    shortcut: "s",
     items: createOrderItems,
   },
   {
     id: "to-order",
     label: "Att beställa",
     icon: ShoppingBasket,
+    shortcut: "a",
     items: orderTabs,
   },
   {
@@ -411,20 +421,27 @@ function Sidebar({
 }
 
 function App() {
+  const [initialOrderEntryRowCount] = useState(getInitialOrderEntryRowCount);
   const [activeGroup, setActiveGroup] = useState<NavigationGroup>(
     navigationGroups[0],
   );
   const [activeItem, setActiveItem] = useState(navigationGroups[0].items[0]);
   const [orderRows, setOrderRows] = useState<Record<string, OrderRow[]>>(() =>
     Object.fromEntries(
-      createOrderTabs.map((tab) => [tab, createEmptyRows(15)]),
+      createOrderTabs.map((tab) => [
+        tab,
+        createEmptyRows(initialOrderEntryRowCount),
+      ]),
     ),
   );
   const [supplierOrderRows, setSupplierOrderRows] = useState<
     Record<string, SupplierOrderRow[]>
   >(() =>
     Object.fromEntries(
-      supplierOrderTabs.map((tab) => [tab, createEmptySupplierOrderRows(15)]),
+      supplierOrderTabs.map((tab) => [
+        tab,
+        createEmptySupplierOrderRows(initialOrderEntryRowCount),
+      ]),
     ),
   );
   const [invoiceRows, setInvoiceRows] = useState<InvoiceRow[]>(() =>
@@ -443,6 +460,10 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cellInputRefs = useRef(new Map<string, HTMLInputElement>());
   const pendingInputFocus = useRef<string | null>(null);
+  const workspaceTabRefs = useRef(new Map<string, HTMLButtonElement>());
+  const pendingTabFocus = useRef<{ groupId: GroupId; item: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!pendingInputFocus.current) return;
@@ -451,11 +472,37 @@ function App() {
   }, [orderRows, supplierOrderRows, invoiceRows, packingListRows]);
 
   useEffect(() => {
+    const pendingFocus = pendingTabFocus.current;
+    if (
+      !pendingFocus ||
+      pendingFocus.groupId !== activeGroup.id ||
+      pendingFocus.item !== activeItem
+    ) {
+      return;
+    }
+
+    workspaceTabRefs.current
+      .get(`${pendingFocus.groupId}:${pendingFocus.item}`)
+      ?.focus();
+    pendingTabFocus.current = null;
+  }, [activeGroup, activeItem]);
+
+  useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
+      const target = event.target;
+      if (
+        event.key === "Escape" &&
+        target instanceof HTMLInputElement &&
+        target.closest(".order-table")
+      ) {
+        event.preventDefault();
+        target.blur();
+        return;
+      }
+
       if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
         return;
 
-      const target = event.target;
       if (
         target instanceof HTMLElement &&
         (target.isContentEditable || target.matches("input, textarea, select"))
@@ -464,9 +511,30 @@ function App() {
       }
 
       const key = event.key.toLowerCase();
+      if (key === "q") {
+        const firstTableInput = document.querySelector<HTMLInputElement>(
+          ".order-entry .order-table input",
+        );
+        if (!firstTableInput) return;
+        event.preventDefault();
+        firstTableInput.focus();
+        return;
+      }
+
       const group = navigationGroups.find(({ shortcut }) => shortcut === key);
       if (group) {
         event.preventDefault();
+        if (activeGroup.id === group.id && activeItem === group.items[0]) {
+          workspaceTabRefs.current
+            .get(`${group.id}:${group.items[0]}`)
+            ?.focus();
+          return;
+        }
+
+        pendingTabFocus.current = {
+          groupId: group.id,
+          item: group.items[0],
+        };
         setActiveGroup(group);
         setActiveItem(group.items[0]);
         return;
@@ -478,12 +546,20 @@ function App() {
       if (!item) return;
 
       event.preventDefault();
+      if (activeItem === item) {
+        workspaceTabRefs.current
+          .get(`${activeGroup.id}:${item}`)
+          ?.focus();
+        return;
+      }
+
+      pendingTabFocus.current = { groupId: activeGroup.id, item };
       setActiveItem(item);
     }
 
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [activeGroup]);
+  }, [activeGroup, activeItem]);
 
   function selectGroup(group: NavigationGroup) {
     setActiveGroup(group);
@@ -622,7 +698,9 @@ function App() {
         ...currentRows,
         [activeItem]: [
           ...importedRows,
-          ...createEmptyRows(Math.max(0, 15 - importedRows.length)),
+          ...createEmptyRows(
+            Math.max(0, initialOrderEntryRowCount - importedRows.length),
+          ),
         ],
       }));
       setFileMessage(
@@ -641,7 +719,8 @@ function App() {
     }
   }
 
-  const currentRows = orderRows[activeItem] ?? createEmptyRows(15);
+  const currentRows =
+    orderRows[activeItem] ?? createEmptyRows(initialOrderEntryRowCount);
   const supplierRows = supplierOrderRows[activeItem];
 
   return (
@@ -663,6 +742,11 @@ function App() {
                 type="button"
                 role="tab"
                 id={`tab-${activeGroup.id}-${index}`}
+                ref={(element) => {
+                  const key = `${activeGroup.id}:${item}`;
+                  if (element) workspaceTabRefs.current.set(key, element);
+                  else workspaceTabRefs.current.delete(key);
+                }}
                 aria-selected={isActive}
                 aria-keyshortcuts={`Alt+${index + 1}`}
                 title={`Alt+${index + 1}`}
@@ -684,12 +768,20 @@ function App() {
                 <h1>{activeItem}</h1>
               </div>
               {supplierRows ? (
-                <button
-                  className="upload-button create-order-button"
-                  type="button"
-                >
-                  Skapa beställning
-                </button>
+                <div className="supplier-order-actions">
+                  <button
+                    className="upload-button create-order-button"
+                    type="button"
+                  >
+                    Ladda upp Data
+                  </button>
+                  <button
+                    className="upload-button create-order-button"
+                    type="button"
+                  >
+                    Skapa beställningsfil
+                  </button>
+                </div>
               ) : (
                 <aside
                   className={`file-upload-panel${isDragging ? " is-dragging" : ""}`}
