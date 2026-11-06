@@ -768,7 +768,7 @@ function App() {
                 <h1>{activeItem}</h1>
               </div>
               {supplierRows ? (
-                <div className="supplier-order-actions">
+                <div className="order-entry-actions">
                   <button
                     className="upload-button create-order-button"
                     type="button"
@@ -783,84 +783,92 @@ function App() {
                   </button>
                 </div>
               ) : (
-                <aside
-                  className={`file-upload-panel${isDragging ? " is-dragging" : ""}`}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={(event) => {
-                    if (
-                      !event.currentTarget.contains(
-                        event.relatedTarget as Node | null,
-                      )
-                    ) {
+                <div className="order-entry-actions">
+                  <aside
+                    className={`file-upload-panel${isDragging ? " is-dragging" : ""}`}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={(event) => {
+                      if (
+                        !event.currentTarget.contains(
+                          event.relatedTarget as Node | null,
+                        )
+                      ) {
+                        setIsDragging(false);
+                      }
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
                       setIsDragging(false);
-                    }
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    setIsDragging(false);
-                    selectFile(event.dataTransfer.files[0]);
-                  }}
-                >
-                  <div className="upload-icon">
-                    <FileUp size={21} aria-hidden="true" />
-                  </div>
-                  <div className="upload-copy">
-                    <h2>Importera från fil</h2>
-                    {fileError ? (
-                      <p
-                        className="file-feedback is-error"
-                        role="alert"
-                        title={fileError}
+                      selectFile(event.dataTransfer.files[0]);
+                    }}
+                  >
+                    <div className="upload-icon">
+                      <FileUp size={21} aria-hidden="true" />
+                    </div>
+                    <div className="upload-copy">
+                      <h2>Importera från fil</h2>
+                      {fileError ? (
+                        <p
+                          className="file-feedback is-error"
+                          role="alert"
+                          title={fileError}
+                        >
+                          {fileError}
+                        </p>
+                      ) : fileMessage ? (
+                        <p
+                          className="file-feedback"
+                          role="status"
+                          title={fileMessage}
+                        >
+                          {fileMessage}
+                        </p>
+                      ) : selectedFile ? (
+                        <p className="selected-file" title={selectedFile.name}>
+                          {selectedFile.name}
+                        </p>
+                      ) : (
+                        <p className="upload-instructions">
+                          Dra hit för att välja fil · CSV, TSV eller TXT
+                        </p>
+                      )}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      className="visually-hidden"
+                      type="file"
+                      accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+                      aria-label="Välj fil att importera"
+                      onChange={(event) => selectFile(event.target.files?.[0])}
+                    />
+                    <div className="upload-actions">
+                      <button
+                        className="upload-button"
+                        type="button"
+                        disabled={!selectedFile}
+                        onClick={() => void uploadFile()}
                       >
-                        {fileError}
-                      </p>
-                    ) : fileMessage ? (
-                      <p
-                        className="file-feedback"
-                        role="status"
-                        title={fileMessage}
+                        Ladda upp
+                      </button>
+                      <button
+                        className="choose-file-button"
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
                       >
-                        {fileMessage}
-                      </p>
-                    ) : selectedFile ? (
-                      <p className="selected-file" title={selectedFile.name}>
-                        {selectedFile.name}
-                      </p>
-                    ) : (
-                      <p className="upload-instructions">
-                        Dra hit för att välja fil · CSV, TSV eller TXT
-                      </p>
-                    )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    className="visually-hidden"
-                    type="file"
-                    accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
-                    aria-label="Välj fil att importera"
-                    onChange={(event) => selectFile(event.target.files?.[0])}
-                  />
-                  <div className="upload-actions">
-                    <button
-                      className="upload-button"
-                      type="button"
-                      disabled={!selectedFile}
-                      onClick={() => void uploadFile()}
-                    >
-                      Ladda upp
-                    </button>
-                    <button
-                      className="choose-file-button"
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Välj fil
-                    </button>
-                  </div>
-                </aside>
+                        Välj fil
+                      </button>
+                    </div>
+                  </aside>
+                  <button
+                    className="upload-button create-order-button"
+                    type="button"
+                  >
+                    Skapa beställning
+                  </button>
+                </div>
               )}
             </header>
 

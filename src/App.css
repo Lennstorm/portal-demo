@@ -273,11 +273,21 @@
   gap: 20px;
 }
 
-.supplier-order-actions {
+.order-entry-actions {
   display: flex;
-  flex: 0 0 auto;
+  min-width: 0;
+  flex: 0 1 auto;
+  align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+
+.order-entry-actions > .file-upload-panel {
+  margin-left: 0;
+}
+
+.order-entry-actions > .create-order-button {
+  flex: 0 0 auto;
 }
 
 .order-entry-header.has-action {
