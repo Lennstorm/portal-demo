@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ClipboardEvent,
+} from "react";
 import {
   ArrowLeftRight,
   ChevronDown,
@@ -151,6 +156,7 @@ type PackingListColumn = (typeof packingListColumns)[number];
 type PackingListRow = Record<PackingListColumn, string>;
 type BackorderColumn = (typeof backorderColumns)[number];
 type BackorderRow = Record<BackorderColumn, string>;
+type TablePasteFeedback = { message: string; isError: boolean };
 
 function createEmptyRow(): OrderRow {
   return Object.fromEntries(
@@ -268,13 +274,17 @@ function parseDelimitedText(text: string): string[][] {
   return records;
 }
 
-function rowsFromFile(text: string): OrderRow[] {
+function rowsFromFile<T extends string>(
+  text: string,
+  columns: readonly T[],
+  createRow: () => Record<T, string>,
+): Record<T, string>[] {
   const records = parseDelimitedText(text);
   if (records.length === 0) return [];
 
   const normalizeHeader = (value: string) =>
     value.toLocaleLowerCase("sv-SE").replace(/[^a-zåäö0-9]/g, "");
-  const normalizedColumns = orderColumns.map(normalizeHeader);
+  const normalizedColumns = columns.map(normalizeHeader);
   const firstRowHeaders = records[0].map(normalizeHeader);
   const hasHeaders = firstRowHeaders.some((header) =>
     normalizedColumns.includes(header),
@@ -283,14 +293,82 @@ function rowsFromFile(text: string): OrderRow[] {
   const data = hasHeaders ? records.slice(1) : records;
 
   return data.map((record) => {
-    const row = createEmptyRow();
+    const row = createRow();
     headers.forEach((header, index) => {
       const columnIndex = normalizedColumns.indexOf(header);
       if (columnIndex !== -1)
-        row[orderColumns[columnIndex]] = record[index] ?? "";
+        row[columns[columnIndex]] = record[index] ?? "";
     });
     return row;
   });
+}
+
+function parseClipboardTable(text: string): string[][] {
+  const source = text.replace(/(?:\r\n|\r|\n)$/, "");
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let value = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (character === '"') {
+      if (inQuotes && source[index + 1] === '"') {
+        value += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (!inQuotes && character === "\t") {
+      row.push(value);
+      value = "";
+    } else if (!inQuotes && (character === "\n" || character === "\r")) {
+      if (character === "\r" && source[index + 1] === "\n") index += 1;
+      row.push(value);
+      rows.push(row);
+      row = [];
+      value = "";
+    } else {
+      value += character;
+    }
+  }
+
+  row.push(value);
+  rows.push(row);
+  return rows;
+}
+
+function applyClipboardTable<Row extends Record<string, string>>(
+  pastedRows: string[][],
+  startRow: number,
+  startColumn: number,
+  currentRows: Row[],
+  columns: readonly (keyof Row & string)[],
+  createRow: () => Row,
+): { rows: Row[]; pastedCellCount: number; rejectedCellCount: number } {
+  const rows = currentRows.slice();
+  let pastedCellCount = 0;
+  let rejectedCellCount = 0;
+
+  pastedRows.forEach((pastedRow, rowOffset) => {
+    const targetRowIndex = startRow + rowOffset;
+    while (rows.length <= targetRowIndex) rows.push(createRow());
+
+    const updatedRow = { ...rows[targetRowIndex] } as Row;
+    const writableRow = updatedRow as Record<keyof Row & string, string>;
+    pastedRow.forEach((value, columnOffset) => {
+      const targetColumn = columns[startColumn + columnOffset];
+      if (targetColumn === undefined) {
+        rejectedCellCount += 1;
+      } else {
+        writableRow[targetColumn] = value;
+        pastedCellCount += 1;
+      }
+    });
+    rows[targetRowIndex] = updatedRow;
+  });
+
+  return { rows, pastedCellCount, rejectedCellCount };
 }
 
 const navigationGroups: NavigationGroup[] = [
@@ -420,6 +498,23 @@ function Sidebar({
   );
 }
 
+function TablePasteStatus({
+  feedback,
+}: {
+  feedback: TablePasteFeedback | null;
+}) {
+  if (!feedback) return null;
+
+  return (
+    <p
+      className={`table-paste-feedback${feedback.isError ? " is-error" : ""}`}
+      role={feedback.isError ? "alert" : "status"}
+    >
+      {feedback.message}
+    </p>
+  );
+}
+
 function App() {
   const [initialOrderEntryRowCount] = useState(getInitialOrderEntryRowCount);
   const [activeGroup, setActiveGroup] = useState<NavigationGroup>(
@@ -457,6 +552,8 @@ function App() {
   const [fileMessage, setFileMessage] = useState("");
   const [fileError, setFileError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [pasteFeedback, setPasteFeedback] =
+    useState<TablePasteFeedback | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cellInputRefs = useRef(new Map<string, HTMLInputElement>());
   const pendingInputFocus = useRef<string | null>(null);
@@ -535,6 +632,7 @@ function App() {
           groupId: group.id,
           item: group.items[0],
         };
+        setPasteFeedback(null);
         setActiveGroup(group);
         setActiveItem(group.items[0]);
         return;
@@ -554,6 +652,7 @@ function App() {
       }
 
       pendingTabFocus.current = { groupId: activeGroup.id, item };
+      setPasteFeedback(null);
       setActiveItem(item);
     }
 
@@ -562,6 +661,7 @@ function App() {
   }, [activeGroup, activeItem]);
 
   function selectGroup(group: NavigationGroup) {
+    setPasteFeedback(null);
     setActiveGroup(group);
     setActiveItem(group.items[0]);
   }
@@ -676,6 +776,42 @@ function App() {
     setPackingListRows((rows) => rows.filter((_, index) => index !== rowIndex));
   }
 
+  function handleTablePaste<Row extends Record<string, string>>(
+    event: ClipboardEvent<HTMLInputElement>,
+    startRow: number,
+    startColumn: number,
+    rows: Row[],
+    columns: readonly (keyof Row & string)[],
+    createRow: () => Row,
+    updateRows: (updatedRows: Row[]) => void,
+  ) {
+    const text = event.clipboardData.getData("text/plain");
+    if (!text.includes("\t") && !/[\r\n]/.test(text)) return;
+
+    event.preventDefault();
+    const result = applyClipboardTable(
+      parseClipboardTable(text),
+      startRow,
+      startColumn,
+      rows,
+      columns,
+      createRow,
+    );
+    updateRows(result.rows);
+
+    if (result.rejectedCellCount > 0) {
+      setPasteFeedback({
+        message: `${result.pastedCellCount} celler inklistrade. ${result.rejectedCellCount} celler utanför tabellens kolumner hoppades över.`,
+        isError: true,
+      });
+    } else {
+      setPasteFeedback({
+        message: `${result.pastedCellCount} celler inklistrade.`,
+        isError: false,
+      });
+    }
+  }
+
   function selectFile(file: File | undefined) {
     if (!file) return;
     if (!/\.(csv|tsv|txt)$/i.test(file.name)) {
@@ -693,18 +829,43 @@ function App() {
     if (!selectedFile) return;
 
     try {
-      const importedRows = rowsFromFile(await selectedFile.text());
-      setOrderRows((currentRows) => ({
-        ...currentRows,
-        [activeItem]: [
-          ...importedRows,
-          ...createEmptyRows(
-            Math.max(0, initialOrderEntryRowCount - importedRows.length),
-          ),
-        ],
-      }));
+      const fileText = await selectedFile.text();
+      let importedRowCount: number;
+      if (supplierRows) {
+        const importedRows = rowsFromFile(
+          fileText,
+          supplierOrderColumns,
+          createEmptySupplierOrderRow,
+        );
+        importedRowCount = importedRows.length;
+        setSupplierOrderRows((currentRows) => ({
+          ...currentRows,
+          [activeItem]: [
+            ...importedRows,
+            ...createEmptySupplierOrderRows(
+              Math.max(0, initialOrderEntryRowCount - importedRows.length),
+            ),
+          ],
+        }));
+      } else {
+        const importedRows = rowsFromFile(
+          fileText,
+          orderColumns,
+          createEmptyRow,
+        );
+        importedRowCount = importedRows.length;
+        setOrderRows((currentRows) => ({
+          ...currentRows,
+          [activeItem]: [
+            ...importedRows,
+            ...createEmptyRows(
+              Math.max(0, initialOrderEntryRowCount - importedRows.length),
+            ),
+          ],
+        }));
+      }
       setFileMessage(
-        `${importedRows.length} rader importerade från ${selectedFile.name}.`,
+        `${importedRowCount} rader importerade från ${selectedFile.name}.`,
       );
       setFileError("");
       setSelectedFile(null);
@@ -750,7 +911,10 @@ function App() {
                 aria-selected={isActive}
                 aria-keyshortcuts={`Alt+${index + 1}`}
                 title={`Alt+${index + 1}`}
-                onClick={() => setActiveItem(item)}
+                onClick={() => {
+                  if (activeItem !== item) setPasteFeedback(null);
+                  setActiveItem(item);
+                }}
               >
                 {item}
               </button>
@@ -767,113 +931,93 @@ function App() {
               <div>
                 <h1>{activeItem}</h1>
               </div>
-              {supplierRows ? (
-                <div className="order-entry-actions">
-                  <button
-                    className="upload-button create-order-button"
-                    type="button"
-                  >
-                    Ladda upp Data
-                  </button>
-                  <button
-                    className="upload-button create-order-button"
-                    type="button"
-                  >
-                    Skapa beställningsfil
-                  </button>
-                </div>
-              ) : (
-                <div className="order-entry-actions">
-                  <aside
-                    className={`file-upload-panel${isDragging ? " is-dragging" : ""}`}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={(event) => {
-                      if (
-                        !event.currentTarget.contains(
-                          event.relatedTarget as Node | null,
-                        )
-                      ) {
-                        setIsDragging(false);
-                      }
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
+              <div className="order-entry-actions">
+                <aside
+                  className={`file-upload-panel${isDragging ? " is-dragging" : ""}`}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={(event) => {
+                    if (
+                      !event.currentTarget.contains(
+                        event.relatedTarget as Node | null,
+                      )
+                    ) {
                       setIsDragging(false);
-                      selectFile(event.dataTransfer.files[0]);
-                    }}
-                  >
-                    <div className="upload-icon">
-                      <FileUp size={21} aria-hidden="true" />
-                    </div>
-                    <div className="upload-copy">
-                      <h2>Importera från fil</h2>
-                      {fileError ? (
-                        <p
-                          className="file-feedback is-error"
-                          role="alert"
-                          title={fileError}
-                        >
-                          {fileError}
-                        </p>
-                      ) : fileMessage ? (
-                        <p
-                          className="file-feedback"
-                          role="status"
-                          title={fileMessage}
-                        >
-                          {fileMessage}
-                        </p>
-                      ) : selectedFile ? (
-                        <p className="selected-file" title={selectedFile.name}>
-                          {selectedFile.name}
-                        </p>
-                      ) : (
-                        <p className="upload-instructions">
-                          Dra hit för att välja fil · CSV, TSV eller TXT
-                        </p>
-                      )}
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      className="visually-hidden"
-                      type="file"
-                      accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
-                      aria-label="Välj fil att importera"
-                      onChange={(event) => selectFile(event.target.files?.[0])}
-                    />
-                    <div className="upload-actions">
-                      <button
-                        className="upload-button"
-                        type="button"
-                        disabled={!selectedFile}
-                        onClick={() => void uploadFile()}
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setIsDragging(false);
+                    selectFile(event.dataTransfer.files[0]);
+                  }}
+                >
+                  <div className="upload-icon">
+                    <FileUp size={21} aria-hidden="true" />
+                  </div>
+                  <div className="upload-copy">
+                    <h2>Importera från fil</h2>
+                    {fileError ? (
+                      <p
+                        className="file-feedback is-error"
+                        role="alert"
+                        title={fileError}
                       >
-                        Ladda upp
-                      </button>
-                      <button
-                        className="choose-file-button"
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
+                        {fileError}
+                      </p>
+                    ) : fileMessage ? (
+                      <p
+                        className="file-feedback"
+                        role="status"
+                        title={fileMessage}
                       >
-                        Välj fil
-                      </button>
-                    </div>
-                  </aside>
-                  <button
-                    className="upload-button create-order-button"
-                    type="button"
-                  >
-                    Skapa beställning
-                  </button>
-                </div>
-              )}
+                        {fileMessage}
+                      </p>
+                    ) : selectedFile ? (
+                      <p className="selected-file" title={selectedFile.name}>
+                        {selectedFile.name}
+                      </p>
+                    ) : null}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    className="visually-hidden"
+                    type="file"
+                    accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+                    aria-label="Välj fil att importera"
+                    onChange={(event) => selectFile(event.target.files?.[0])}
+                  />
+                  <div className="upload-actions">
+                    <button
+                      className="upload-button"
+                      type="button"
+                      disabled={!selectedFile}
+                      onClick={() => void uploadFile()}
+                    >
+                      Ladda upp
+                    </button>
+                    <button
+                      className="choose-file-button"
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Välj fil
+                    </button>
+                  </div>
+                </aside>
+                <button
+                  className="upload-button create-order-button"
+                  type="button"
+                >
+                  {supplierRows ? "Skapa beställningsfil" : "Skapa beställning"}
+                </button>
+              </div>
             </header>
 
             <div className="order-entry-content">
               <div className="order-table-section">
+                <TablePasteStatus feedback={pasteFeedback} />
                 <div
                   className={`order-table-scroll${supplierRows ? " supplier-order-table-scroll" : ""}`}
                 >
@@ -920,6 +1064,21 @@ function App() {
                                   value={row[column]}
                                   className={
                                     row[column] ? "has-content" : undefined
+                                  }
+                                  onPaste={(event) =>
+                                    handleTablePaste(
+                                      event,
+                                      rowIndex,
+                                      supplierOrderColumns.indexOf(column),
+                                      supplierRows,
+                                      supplierOrderColumns,
+                                      createEmptySupplierOrderRow,
+                                      (updatedRows) =>
+                                        setSupplierOrderRows((currentRows) => ({
+                                          ...currentRows,
+                                          [activeItem]: updatedRows,
+                                        })),
+                                    )
                                   }
                                   onChange={(event) =>
                                     updateSupplierOrderCell(
@@ -1019,6 +1178,21 @@ function App() {
                                   className={
                                     row[column] ? "has-content" : undefined
                                   }
+                                  onPaste={(event) =>
+                                    handleTablePaste(
+                                      event,
+                                      rowIndex,
+                                      orderColumns.indexOf(column),
+                                      currentRows,
+                                      orderColumns,
+                                      createEmptyRow,
+                                      (updatedRows) =>
+                                        setOrderRows((existingRows) => ({
+                                          ...existingRows,
+                                          [activeItem]: updatedRows,
+                                        })),
+                                    )
+                                  }
                                   onChange={(event) =>
                                     updateOrderCell(
                                       rowIndex,
@@ -1088,6 +1262,7 @@ function App() {
               </div>
             </header>
             <div className="order-table-section">
+              <TablePasteStatus feedback={pasteFeedback} />
               <div className="order-table-scroll">
                 <table className="order-table invoice-table">
                   <thead>
@@ -1119,6 +1294,17 @@ function App() {
                               value={row[column]}
                               className={
                                 row[column] ? "has-content" : undefined
+                              }
+                              onPaste={(event) =>
+                                handleTablePaste(
+                                  event,
+                                  rowIndex,
+                                  invoiceColumns.indexOf(column),
+                                  invoiceRows,
+                                  invoiceColumns,
+                                  createEmptyInvoiceRow,
+                                  setInvoiceRows,
+                                )
                               }
                               onChange={(event) =>
                                 updateInvoiceCell(
@@ -1187,6 +1373,7 @@ function App() {
               </div>
             </header>
             <div className="order-table-section">
+              <TablePasteStatus feedback={pasteFeedback} />
               <div className="order-table-scroll">
                 <table className="order-table packing-list-table">
                   <thead>
@@ -1218,6 +1405,17 @@ function App() {
                               value={row[column]}
                               className={
                                 row[column] ? "has-content" : undefined
+                              }
+                              onPaste={(event) =>
+                                handleTablePaste(
+                                  event,
+                                  rowIndex,
+                                  packingListColumns.indexOf(column),
+                                  packingListRows,
+                                  packingListColumns,
+                                  createEmptyPackingListRow,
+                                  setPackingListRows,
+                                )
                               }
                               onChange={(event) =>
                                 updatePackingListCell(

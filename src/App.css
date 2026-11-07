@@ -380,6 +380,16 @@
   flex-direction: column;
 }
 
+.table-paste-feedback {
+  margin: 0 0 8px;
+  color: #166534;
+  font-size: 12px;
+}
+
+.table-paste-feedback.is-error {
+  color: #b42318;
+}
+
 .order-table-scroll {
   overflow: auto;
   min-height: 0;
@@ -626,15 +636,6 @@
 .upload-copy {
   min-width: 0;
   flex: 1 1 auto;
-}
-
-.upload-instructions {
-  margin: 3px 0 0;
-  overflow: hidden;
-  color: #475569;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .selected-file {
