@@ -208,6 +208,10 @@ function createEmptyBackorderRows(count: number): BackorderRow[] {
   return Array.from({ length: count }, createEmptyBackorderRow);
 }
 
+function getOrderRowsKey(groupId: GroupId, item: string): string {
+  return `${groupId}:${item}`;
+}
+
 function getInitialOrderEntryRowCount(): number {
   return window.innerHeight < ORDER_ENTRY_ROWS_HEIGHT_BREAKPOINT
     ? COMPACT_ORDER_ENTRY_ROW_COUNT
@@ -521,12 +525,25 @@ function App() {
     navigationGroups[0],
   );
   const [activeItem, setActiveItem] = useState(navigationGroups[0].items[0]);
+  const activeOrderRowsKey = getOrderRowsKey(activeGroup.id, activeItem);
   const [orderRows, setOrderRows] = useState<Record<string, OrderRow[]>>(() =>
     Object.fromEntries(
-      createOrderTabs.map((tab) => [
-        tab,
-        createEmptyRows(initialOrderEntryRowCount),
-      ]),
+      [
+        ...createOrderTabs.map((tab) => [
+          getOrderRowsKey("create-order", tab),
+          createEmptyRows(initialOrderEntryRowCount),
+        ]),
+        ...orderTabs.flatMap((tab) => [
+          [
+            getOrderRowsKey("to-order", tab),
+            createEmptyRows(initialOrderEntryRowCount),
+          ],
+          [
+            getOrderRowsKey("orders", tab),
+            createEmptyRows(initialOrderEntryRowCount),
+          ],
+        ]),
+      ],
     ),
   );
   const [supplierOrderRows, setSupplierOrderRows] = useState<
@@ -673,7 +690,7 @@ function App() {
   ) {
     setOrderRows((currentRows) => ({
       ...currentRows,
-      [activeItem]: currentRows[activeItem].map((row, index) =>
+      [activeOrderRowsKey]: currentRows[activeOrderRowsKey].map((row, index) =>
         index === rowIndex ? { ...row, [column]: value } : row,
       ),
     }));
@@ -681,18 +698,21 @@ function App() {
 
   function addOrderRow(focusAfterAdding = false) {
     if (focusAfterAdding) {
-      pendingInputFocus.current = `${activeItem}:${currentRows.length}:Prefix`;
+      pendingInputFocus.current = `${activeOrderRowsKey}:${currentRows.length}:Prefix`;
     }
     setOrderRows((currentRows) => ({
       ...currentRows,
-      [activeItem]: [...currentRows[activeItem], createEmptyRow()],
+      [activeOrderRowsKey]: [
+        ...currentRows[activeOrderRowsKey],
+        createEmptyRow(),
+      ],
     }));
   }
 
   function removeOrderRow(rowIndex: number) {
     setOrderRows((currentRows) => ({
       ...currentRows,
-      [activeItem]: currentRows[activeItem].filter(
+      [activeOrderRowsKey]: currentRows[activeOrderRowsKey].filter(
         (_, index) => index !== rowIndex,
       ),
     }));
@@ -856,7 +876,7 @@ function App() {
         importedRowCount = importedRows.length;
         setOrderRows((currentRows) => ({
           ...currentRows,
-          [activeItem]: [
+          [activeOrderRowsKey]: [
             ...importedRows,
             ...createEmptyRows(
               Math.max(0, initialOrderEntryRowCount - importedRows.length),
@@ -881,7 +901,7 @@ function App() {
   }
 
   const currentRows =
-    orderRows[activeItem] ?? createEmptyRows(initialOrderEntryRowCount);
+    orderRows[activeOrderRowsKey] ?? createEmptyRows(initialOrderEntryRowCount);
   const supplierRows = supplierOrderRows[activeItem];
 
   return (
@@ -921,98 +941,104 @@ function App() {
             );
           })}
         </nav>
-        {activeGroup.id === "create-order" && (
+        {["create-order", "to-order", "orders"].includes(activeGroup.id) && (
           <section
             className="order-entry"
             role="tabpanel"
-            aria-labelledby={`tab-create-order-${activeGroup.items.indexOf(activeItem)}`}
+            aria-labelledby={`tab-${activeGroup.id}-${activeGroup.items.indexOf(activeItem)}`}
           >
-            <header className="order-entry-header has-upload-panel">
+            <header
+              className={`order-entry-header${activeGroup.id === "create-order" ? " has-upload-panel" : ""}`}
+            >
               <div>
                 <h1>{activeItem}</h1>
               </div>
-              <div className="order-entry-actions">
-                <aside
-                  className={`file-upload-panel${isDragging ? " is-dragging" : ""}`}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={(event) => {
-                    if (
-                      !event.currentTarget.contains(
-                        event.relatedTarget as Node | null,
-                      )
-                    ) {
+              {activeGroup.id === "create-order" && (
+                <div className="order-entry-actions">
+                  <aside
+                    className={`file-upload-panel${isDragging ? " is-dragging" : ""}`}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={(event) => {
+                      if (
+                        !event.currentTarget.contains(
+                          event.relatedTarget as Node | null,
+                        )
+                      ) {
+                        setIsDragging(false);
+                      }
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
                       setIsDragging(false);
-                    }
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    setIsDragging(false);
-                    selectFile(event.dataTransfer.files[0]);
-                  }}
-                >
-                  <div className="upload-icon">
-                    <FileUp size={21} aria-hidden="true" />
-                  </div>
-                  <div className="upload-copy">
-                    <h2>Importera från fil</h2>
-                    {fileError ? (
-                      <p
-                        className="file-feedback is-error"
-                        role="alert"
-                        title={fileError}
+                      selectFile(event.dataTransfer.files[0]);
+                    }}
+                  >
+                    <div className="upload-icon">
+                      <FileUp size={21} aria-hidden="true" />
+                    </div>
+                    <div className="upload-copy">
+                      <h2>Importera från fil</h2>
+                      {fileError ? (
+                        <p
+                          className="file-feedback is-error"
+                          role="alert"
+                          title={fileError}
+                        >
+                          {fileError}
+                        </p>
+                      ) : fileMessage ? (
+                        <p
+                          className="file-feedback"
+                          role="status"
+                          title={fileMessage}
+                        >
+                          {fileMessage}
+                        </p>
+                      ) : selectedFile ? (
+                        <p className="selected-file" title={selectedFile.name}>
+                          {selectedFile.name}
+                        </p>
+                      ) : null}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      className="visually-hidden"
+                      type="file"
+                      accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+                      aria-label="Välj fil att importera"
+                      onChange={(event) => selectFile(event.target.files?.[0])}
+                    />
+                    <div className="upload-actions">
+                      <button
+                        className="upload-button"
+                        type="button"
+                        disabled={!selectedFile}
+                        onClick={() => void uploadFile()}
                       >
-                        {fileError}
-                      </p>
-                    ) : fileMessage ? (
-                      <p
-                        className="file-feedback"
-                        role="status"
-                        title={fileMessage}
+                        Ladda upp
+                      </button>
+                      <button
+                        className="choose-file-button"
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
                       >
-                        {fileMessage}
-                      </p>
-                    ) : selectedFile ? (
-                      <p className="selected-file" title={selectedFile.name}>
-                        {selectedFile.name}
-                      </p>
-                    ) : null}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    className="visually-hidden"
-                    type="file"
-                    accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
-                    aria-label="Välj fil att importera"
-                    onChange={(event) => selectFile(event.target.files?.[0])}
-                  />
-                  <div className="upload-actions">
-                    <button
-                      className="upload-button"
-                      type="button"
-                      disabled={!selectedFile}
-                      onClick={() => void uploadFile()}
-                    >
-                      Ladda upp
-                    </button>
-                    <button
-                      className="choose-file-button"
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Välj fil
-                    </button>
-                  </div>
-                </aside>
-                <button
-                  className="upload-button create-order-button"
-                  type="button"
-                >
-                  {supplierRows ? "Skapa beställningsfil" : "Skapa beställning"}
-                </button>
-              </div>
+                        Välj fil
+                      </button>
+                    </div>
+                  </aside>
+                  <button
+                    className="upload-button create-order-button"
+                    type="button"
+                  >
+                    {supplierRows
+                      ? "Skapa beställningsfil"
+                      : "Skapa beställning"}
+                  </button>
+                </div>
+              )}
             </header>
 
             <div className="order-entry-content">
@@ -1053,7 +1079,7 @@ function App() {
                                 <input
                                   aria-label={`${column}, rad ${rowIndex + 1}`}
                                   ref={(element) => {
-                                    const refKey = `${activeItem}:${rowIndex}:${column}`;
+                                    const refKey = `${activeOrderRowsKey}:${rowIndex}:${column}`;
                                     if (element)
                                       cellInputRefs.current.set(
                                         refKey,
@@ -1189,7 +1215,7 @@ function App() {
                                       (updatedRows) =>
                                         setOrderRows((existingRows) => ({
                                           ...existingRows,
-                                          [activeItem]: updatedRows,
+                                          [activeOrderRowsKey]: updatedRows,
                                         })),
                                     )
                                   }
