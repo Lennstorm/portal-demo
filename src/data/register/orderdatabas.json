@@ -1,0 +1,82 @@
+{
+  "columns": [
+    "Ordernr",
+    "Orderdatum",
+    "Kundnr",
+    "Kund",
+    "Artikelnr",
+    "Benämning",
+    "Antal",
+    "Levererat",
+    "Rest",
+    "Status",
+    "Beställare"
+  ],
+  "rows": [
+    {
+      "Ordernr": "OR-26001",
+      "Orderdatum": "2026-10-28",
+      "Kundnr": "K-1001",
+      "Kund": "Exempelkund Nord",
+      "Artikelnr": "REN-10001",
+      "Benämning": "Oljefilter",
+      "Antal": "2",
+      "Levererat": "2",
+      "Rest": "0",
+      "Status": "Levererad",
+      "Beställare": "Demoanvändare"
+    },
+    {
+      "Ordernr": "OR-26002",
+      "Orderdatum": "2026-10-29",
+      "Kundnr": "K-1002",
+      "Kund": "Testverkstad Väst",
+      "Artikelnr": "ISU-22014",
+      "Benämning": "Bromsbelägg, fram",
+      "Antal": "3",
+      "Levererat": "1",
+      "Rest": "2",
+      "Status": "Delvis levererad",
+      "Beställare": "Demoanvändare"
+    },
+    {
+      "Ordernr": "OR-26003",
+      "Orderdatum": "2026-10-30",
+      "Kundnr": "K-1003",
+      "Kund": "Provservice Mitt",
+      "Artikelnr": "VOL-30551",
+      "Benämning": "Luftfilter",
+      "Antal": "4",
+      "Levererat": "0",
+      "Rest": "4",
+      "Status": "Beställd",
+      "Beställare": "Demoanvändare"
+    },
+    {
+      "Ordernr": "OR-26004",
+      "Orderdatum": "2026-11-02",
+      "Kundnr": "K-1004",
+      "Kund": "Exempelkund Syd",
+      "Artikelnr": "VOC-40808",
+      "Benämning": "Temperatursensor",
+      "Antal": "1",
+      "Levererat": "1",
+      "Rest": "0",
+      "Status": "Levererad",
+      "Beställare": "Demoanvändare"
+    },
+    {
+      "Ordernr": "OR-26005",
+      "Orderdatum": "2026-11-04",
+      "Kundnr": "K-1005",
+      "Kund": "Testverkstad Öst",
+      "Artikelnr": "REN-10042",
+      "Benämning": "Tätning",
+      "Antal": "5",
+      "Levererat": "0",
+      "Rest": "5",
+      "Status": "Väntar på lager",
+      "Beställare": "Demoanvändare"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "columns": [
+    "Ord.Art.Ref.Ant",
+    "Ordernr",
+    "Artikelnr",
+    "Levererat",
+    "Referens",
+    "Kollinr.",
+    "Fakt.datum",
+    "Radbelopp",
+    "Inköpspris",
+    "Fakturanr"
+  ],
+  "rows": [
+    {
+      "Ord.Art.Ref.Ant": "1001-1",
+      "Ordernr": "OR-26001",
+      "Artikelnr": "REN-10001",
+      "Levererat": "2",
+      "Referens": "Serviceorder AO-41001",
+      "Kollinr.": "PK-71001",
+      "Fakt.datum": "2026-10-28",
+      "Radbelopp": "1580.00",
+      "Inköpspris": "790.00",
+      "Fakturanr": "FA-86001"
+    },
+    {
+      "Ord.Art.Ref.Ant": "1002-1",
+      "Ordernr": "OR-26002",
+      "Artikelnr": "ISU-22014",
+      "Levererat": "1",
+      "Referens": "Lagerpåfyllnad",
+      "Kollinr.": "PK-71002",
+      "Fakt.datum": "2026-10-29",
+      "Radbelopp": "2460.00",
+      "Inköpspris": "2460.00",
+      "Fakturanr": "FA-86002"
+    },
+    {
+      "Ord.Art.Ref.Ant": "1003-2",
+      "Ordernr": "OR-26003",
+      "Artikelnr": "VOL-30551",
+      "Levererat": "4",
+      "Referens": "Serviceorder AO-41003",
+      "Kollinr.": "PK-71003",
+      "Fakt.datum": "2026-10-30",
+      "Radbelopp": "920.00",
+      "Inköpspris": "230.00",
+      "Fakturanr": "FA-86003"
+    },
+    {
+      "Ord.Art.Ref.Ant": "1004-1",
+      "Ordernr": "OR-26004",
+      "Artikelnr": "VOC-40808",
+      "Levererat": "1",
+      "Referens": "Garantiärende AO-41004",
+      "Kollinr.": "PK-71004",
+      "Fakt.datum": "2026-11-02",
+      "Radbelopp": "1350.00",
+      "Inköpspris": "1350.00",
+      "Fakturanr": "FA-86004"
+    },
+    {
+      "Ord.Art.Ref.Ant": "1005-3",
+      "Ordernr": "OR-26005",
+      "Artikelnr": "REN-10042",
+      "Levererat": "3",
+      "Referens": "Serviceorder AO-41005",
+      "Kollinr.": "PK-71005",
+      "Fakt.datum": "2026-11-04",
+      "Radbelopp": "675.00",
+      "Inköpspris": "225.00",
+      "Fakturanr": "FA-86005"
+    }
+  ]
+}

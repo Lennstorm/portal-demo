@@ -1,0 +1,82 @@
+{
+  "columns": [
+    "Förv. lev.dat.",
+    "Ordernr",
+    "ArtikelNr",
+    "Order typ",
+    "Benämning",
+    "Återf. Text",
+    "Lev. antal",
+    "Vikt (gram)",
+    "Styck-pris",
+    "Summa",
+    "Fraktsedel"
+  ],
+  "rows": [
+    {
+      "Förv. lev.dat.": "2026-11-10",
+      "Ordernr": "OR-26006",
+      "ArtikelNr": "REN-10001",
+      "Order typ": "Lager",
+      "Benämning": "Oljefilter",
+      "Återf. Text": "",
+      "Lev. antal": "2",
+      "Vikt (gram)": "640",
+      "Styck-pris": "790.00",
+      "Summa": "1580.00",
+      "Fraktsedel": "TR-52001"
+    },
+    {
+      "Förv. lev.dat.": "2026-11-10",
+      "Ordernr": "OR-26007",
+      "ArtikelNr": "ISU-22014",
+      "Order typ": "Direkt",
+      "Benämning": "Bromsbelägg, fram",
+      "Återf. Text": "Levereras komplett",
+      "Lev. antal": "1",
+      "Vikt (gram)": "1850",
+      "Styck-pris": "2460.00",
+      "Summa": "2460.00",
+      "Fraktsedel": "TR-52002"
+    },
+    {
+      "Förv. lev.dat.": "2026-11-11",
+      "Ordernr": "OR-26008",
+      "ArtikelNr": "VOL-30551",
+      "Order typ": "Lager",
+      "Benämning": "Luftfilter",
+      "Återf. Text": "",
+      "Lev. antal": "4",
+      "Vikt (gram)": "1200",
+      "Styck-pris": "230.00",
+      "Summa": "920.00",
+      "Fraktsedel": "TR-52003"
+    },
+    {
+      "Förv. lev.dat.": "2026-11-12",
+      "Ordernr": "OR-26009",
+      "ArtikelNr": "VOC-40808",
+      "Order typ": "Garanti",
+      "Benämning": "Temperatursensor",
+      "Återf. Text": "Hanteras varsamt",
+      "Lev. antal": "1",
+      "Vikt (gram)": "220",
+      "Styck-pris": "1350.00",
+      "Summa": "1350.00",
+      "Fraktsedel": "TR-52004"
+    },
+    {
+      "Förv. lev.dat.": "2026-11-12",
+      "Ordernr": "OR-26010",
+      "ArtikelNr": "REN-10042",
+      "Order typ": "Lager",
+      "Benämning": "Tätning",
+      "Återf. Text": "",
+      "Lev. antal": "3",
+      "Vikt (gram)": "90",
+      "Styck-pris": "225.00",
+      "Summa": "675.00",
+      "Fraktsedel": "TR-52005"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "columns": [
+    "AO-nr",
+    "Datum",
+    "Kundnr",
+    "Kund",
+    "Fordon",
+    "Reg.nr.",
+    "Mätarställning",
+    "Tekniker",
+    "Artikelnr",
+    "Benämning",
+    "Antal",
+    "Status"
+  ],
+  "rows": [
+    {
+      "AO-nr": "AO-41001",
+      "Datum": "2026-10-28",
+      "Kundnr": "K-1001",
+      "Kund": "Exempelkund Nord",
+      "Fordon": "Demo Truck 4x2",
+      "Reg.nr.": "TEST-001",
+      "Mätarställning": "128400",
+      "Tekniker": "Tekniker A",
+      "Artikelnr": "REN-10001",
+      "Benämning": "Oljefilter",
+      "Antal": "2",
+      "Status": "Pågående"
+    },
+    {
+      "AO-nr": "AO-41002",
+      "Datum": "2026-10-29",
+      "Kundnr": "K-1002",
+      "Kund": "Testverkstad Väst",
+      "Fordon": "Demo Van 3.5",
+      "Reg.nr.": "TEST-002",
+      "Mätarställning": "84200",
+      "Tekniker": "Tekniker B",
+      "Artikelnr": "ISU-22014",
+      "Benämning": "Bromsbelägg, fram",
+      "Antal": "1",
+      "Status": "Väntar på delar"
+    },
+    {
+      "AO-nr": "AO-41003",
+      "Datum": "2026-10-30",
+      "Kundnr": "K-1003",
+      "Kund": "Provservice Mitt",
+      "Fordon": "Demo Coach 12",
+      "Reg.nr.": "TEST-003",
+      "Mätarställning": "216700",
+      "Tekniker": "Tekniker C",
+      "Artikelnr": "VOL-30551",
+      "Benämning": "Luftfilter",
+      "Antal": "4",
+      "Status": "Klar"
+    },
+    {
+      "AO-nr": "AO-41004",
+      "Datum": "2026-11-02",
+      "Kundnr": "K-1004",
+      "Kund": "Exempelkund Syd",
+      "Fordon": "Demo Truck 6x2",
+      "Reg.nr.": "TEST-004",
+      "Mätarställning": "176300",
+      "Tekniker": "Tekniker A",
+      "Artikelnr": "VOC-40808",
+      "Benämning": "Temperatursensor",
+      "Antal": "1",
+      "Status": "Garanti"
+    },
+    {
+      "AO-nr": "AO-41005",
+      "Datum": "2026-11-04",
+      "Kundnr": "K-1005",
+      "Kund": "Testverkstad Öst",
+      "Fordon": "Demo Van 5.0",
+      "Reg.nr.": "TEST-005",
+      "Mätarställning": "56300",
+      "Tekniker": "Tekniker B",
+      "Artikelnr": "REN-10042",
+      "Benämning": "Tätning",
+      "Antal": "3",
+      "Status": "Bokad"
+    }
+  ]
+}

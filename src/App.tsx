@@ -15,6 +15,7 @@ import {
   Trash2,
   type LucideIcon,
 } from "lucide-react";
+import { registerDatasets, type RegisterDataset } from "./data/registerData";
 
 type GroupId =
   | "create-order"
@@ -99,28 +100,6 @@ const packingListColumns = [
   "Fraktsedel",
 ] as const;
 
-const backorderColumns = [
-  "Account no",
-  "Order",
-  "Order type",
-  "Ext doc.nr.",
-  "Radmärkning",
-  "Part no",
-  "Description",
-  "BO Date",
-  "Dealer BO",
-  "Total BO for the reference",
-  "Order status",
-  "Additional information",
-  "Estimated Shipment from France",
-  "Calculated Delivery date at Dealer",
-  "BO",
-  "On hold",
-  "In progress",
-  "Invoiced",
-  "Comment for Borås",
-] as const;
-
 type OrderColumn = (typeof orderColumns)[number];
 type OrderRow = Record<OrderColumn, string>;
 type SupplierOrderColumn = (typeof supplierOrderColumns)[number];
@@ -154,8 +133,6 @@ type InvoiceColumn = (typeof invoiceColumns)[number];
 type InvoiceRow = Record<InvoiceColumn, string>;
 type PackingListColumn = (typeof packingListColumns)[number];
 type PackingListRow = Record<PackingListColumn, string>;
-type BackorderColumn = (typeof backorderColumns)[number];
-type BackorderRow = Record<BackorderColumn, string>;
 type TablePasteFeedback = { message: string; isError: boolean };
 
 function createEmptyRow(): OrderRow {
@@ -184,28 +161,28 @@ function createEmptyInvoiceRow(): InvoiceRow {
   ) as InvoiceRow;
 }
 
-function createEmptyInvoiceRows(count: number): InvoiceRow[] {
-  return Array.from({ length: count }, createEmptyInvoiceRow);
-}
-
 function createEmptyPackingListRow(): PackingListRow {
   return Object.fromEntries(
     packingListColumns.map((column) => [column, ""]),
   ) as PackingListRow;
 }
 
-function createEmptyPackingListRows(count: number): PackingListRow[] {
-  return Array.from({ length: count }, createEmptyPackingListRow);
-}
-
-function createEmptyBackorderRow(): BackorderRow {
-  return Object.fromEntries(
-    backorderColumns.map((column) => [column, ""]),
-  ) as BackorderRow;
-}
-
-function createEmptyBackorderRows(count: number): BackorderRow[] {
-  return Array.from({ length: count }, createEmptyBackorderRow);
+function rowsForColumns<T extends string>(
+  dataset: RegisterDataset,
+  columns: readonly T[],
+  createRow: () => Record<T, string>,
+): Record<T, string>[] {
+  return dataset.rows.map((sourceRow) => {
+    const row = createRow();
+    columns.forEach((column) => {
+      const value = sourceRow[column];
+      if (value === undefined) {
+        throw new Error(`Mockdata saknar kolumnen "${column}".`);
+      }
+      row[column] = value;
+    });
+    return row;
+  });
 }
 
 function getOrderRowsKey(groupId: GroupId, item: string): string {
@@ -519,6 +496,39 @@ function TablePasteStatus({
   );
 }
 
+function RegisterDataTable({
+  dataset,
+  className = "",
+}: {
+  dataset: RegisterDataset;
+  className?: string;
+}) {
+  return (
+    <div className="order-table-scroll">
+      <table className={`order-table ${className}`.trim()}>
+        <thead>
+          <tr>
+            {dataset.columns.map((column) => (
+              <th key={column} scope="col">
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {dataset.rows.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {dataset.columns.map((column) => (
+                <td key={column}>{row[column]}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function App() {
   const [initialOrderEntryRowCount] = useState(getInitialOrderEntryRowCount);
   const [activeGroup, setActiveGroup] = useState<NavigationGroup>(
@@ -557,13 +567,18 @@ function App() {
     ),
   );
   const [invoiceRows, setInvoiceRows] = useState<InvoiceRow[]>(() =>
-    createEmptyInvoiceRows(15),
+    rowsForColumns(
+      registerDatasets.FakturaRE,
+      invoiceColumns,
+      createEmptyInvoiceRow,
+    ),
   );
   const [packingListRows, setPackingListRows] = useState<PackingListRow[]>(() =>
-    createEmptyPackingListRows(15),
-  );
-  const [backorderRows] = useState<BackorderRow[]>(() =>
-    createEmptyBackorderRows(15),
+    rowsForColumns(
+      registerDatasets.PacklistaRE,
+      packingListColumns,
+      createEmptyPackingListRow,
+    ),
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileMessage, setFileMessage] = useState("");
@@ -903,6 +918,8 @@ function App() {
   const currentRows =
     orderRows[activeOrderRowsKey] ?? createEmptyRows(initialOrderEntryRowCount);
   const supplierRows = supplierOrderRows[activeItem];
+  const registerDataset =
+    activeGroup.id === "database" ? registerDatasets[activeItem] : undefined;
 
   return (
     <div className="portal-layout">
@@ -1499,60 +1516,42 @@ function App() {
             </div>
           </section>
         )}
-        {activeGroup.id === "database" &&
-          activeItem === "Backorderlista RE" && (
+        {registerDataset &&
+          activeItem !== "FakturaRE" &&
+          activeItem !== "PacklistaRE" && (
             <section
               className="order-entry"
               role="tabpanel"
               aria-labelledby={`tab-database-${activeGroup.items.indexOf(activeItem)}`}
             >
-              <header className="order-entry-header has-action">
+              <header
+                className={`order-entry-header${activeItem === "Backorderlista RE" ? " has-action" : ""}`}
+              >
                 <div>
                   <p className="order-entry-eyebrow">Register</p>
-                  <h1>Backorderlista RE</h1>
+                  <h1>{activeItem}</h1>
                 </div>
-                <button
-                  className="upload-button"
-                  type="button"
-                  disabled
-                  title="Importfunktionen är tillfälligt avstängd"
-                >
-                  <FileUp size={16} aria-hidden="true" />
-                  Importera Excel-fil
-                </button>
+                {activeItem === "Backorderlista RE" && (
+                  <button
+                    className="upload-button"
+                    type="button"
+                    disabled
+                    title="Importfunktionen är tillfälligt avstängd"
+                  >
+                    <FileUp size={16} aria-hidden="true" />
+                    Importera Excel-fil
+                  </button>
+                )}
               </header>
               <div className="order-table-section">
-                <div className="order-table-scroll">
-                  <table className="order-table backorder-table">
-                    <thead>
-                      <tr>
-                        {backorderColumns.map((column) => (
-                          <th key={column} scope="col">
-                            {column}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {backorderRows.map((row, rowIndex) => (
-                        <tr key={rowIndex}>
-                          {backorderColumns.map((column) => (
-                            <td key={column}>
-                              <input
-                                aria-label={`${column}, rad ${rowIndex + 1}`}
-                                value={row[column]}
-                                readOnly
-                                className={
-                                  row[column] ? "has-content" : undefined
-                                }
-                              />
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <RegisterDataTable
+                  dataset={registerDataset}
+                  className={
+                    activeItem === "Backorderlista RE"
+                      ? "backorder-table"
+                      : ""
+                  }
+                />
               </div>
             </section>
           )}

@@ -1,0 +1,76 @@
+{
+  "columns": [
+    "Artikelnr",
+    "Prefix",
+    "Benämning",
+    "Kategori",
+    "Leverantör",
+    "Saldo",
+    "Reserverat",
+    "Inköpspris",
+    "Försäljningspris",
+    "Lagerplats"
+  ],
+  "rows": [
+    {
+      "Artikelnr": "REN-10001",
+      "Prefix": "REN",
+      "Benämning": "Oljefilter",
+      "Kategori": "Filter",
+      "Leverantör": "Demo Parts AB",
+      "Saldo": "18",
+      "Reserverat": "3",
+      "Inköpspris": "790.00",
+      "Försäljningspris": "990.00",
+      "Lagerplats": "A-01-03"
+    },
+    {
+      "Artikelnr": "ISU-22014",
+      "Prefix": "ISU",
+      "Benämning": "Bromsbelägg, fram",
+      "Kategori": "Broms",
+      "Leverantör": "Nordisk Demoimport",
+      "Saldo": "7",
+      "Reserverat": "2",
+      "Inköpspris": "2460.00",
+      "Försäljningspris": "3190.00",
+      "Lagerplats": "B-04-02"
+    },
+    {
+      "Artikelnr": "VOL-30551",
+      "Prefix": "VOL",
+      "Benämning": "Luftfilter",
+      "Kategori": "Filter",
+      "Leverantör": "Demo Parts AB",
+      "Saldo": "24",
+      "Reserverat": "4",
+      "Inköpspris": "230.00",
+      "Försäljningspris": "345.00",
+      "Lagerplats": "A-02-01"
+    },
+    {
+      "Artikelnr": "VOC-40808",
+      "Prefix": "VOC",
+      "Benämning": "Temperatursensor",
+      "Kategori": "Elektronik",
+      "Leverantör": "Teknikexempel AB",
+      "Saldo": "3",
+      "Reserverat": "1",
+      "Inköpspris": "1350.00",
+      "Försäljningspris": "1690.00",
+      "Lagerplats": "C-01-04"
+    },
+    {
+      "Artikelnr": "REN-10042",
+      "Prefix": "REN",
+      "Benämning": "Tätning",
+      "Kategori": "Packning",
+      "Leverantör": "Demo Parts AB",
+      "Saldo": "42",
+      "Reserverat": "5",
+      "Inköpspris": "225.00",
+      "Försäljningspris": "315.00",
+      "Lagerplats": "A-03-08"
+    }
+  ]
+}
